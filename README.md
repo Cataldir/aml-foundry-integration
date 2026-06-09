@@ -16,6 +16,7 @@ This repository implements a reproducible pipeline for adaptive offer/message se
 - **Evaluation**: Synthetic contextual environment with delayed rewards
 - **Metrics**: Cumulative reward, regret, conversion rate, exploration share
 - **Azure ML Integration**: Native support for Foundry compute instances and Kubernetes clusters
+- **Agentic Validation**: Optional aggregate-only Foundry bridge with local fallback for safe UCB alpha recommendations
 
 ## Quick Start
 
@@ -34,8 +35,8 @@ source .venv/Scripts/Activate.ps1  # Windows
 # Install dependencies
 pip install -e .
 
-# Optional: Install Kaggle support
-pip install kaggle
+# Optional: Install Kaggle and Foundry agent support
+pip install -e ".[kaggle,foundry]"
 ```
 
 ### Usage
@@ -52,6 +53,9 @@ python examples/run_bandits.py
 ```bash
 # Run locally
 python examples/run_bandits.py
+
+# Run locally with aggregate-only Foundry bridge or local fallback
+python examples/run_bandits.py --use-agent
 
 # Submit to an Azure ML Kubernetes compute target with an Azure ML job config
 az ml job create --file examples/job_config_kubernetes.yaml -g <your-resource-group> -w <your-aml-workspace-name>
@@ -78,6 +82,14 @@ KAGGLE_KEY=your_api_key
 SUBSCRIPTION_ID=your-subscription-id
 RESOURCE_GROUP=your-resource-group
 WORKSPACE_NAME=your-aml-workspace-name
+AZURE_ML_WORKSPACE=your-aml-workspace-name
+AZURE_ML_COMPUTE_INSTANCE_NAME=your-compute-instance-name
+AZURE_ML_COMPUTE_AKS_NAME=your-kubernetes-compute-name
+
+# Optional Azure AI Foundry agent bridge
+FOUNDRY_PROJECT_ENDPOINT=your-foundry-project-endpoint
+FOUNDRY_AGENT_ID=your-foundry-agent-id
+FOUNDRY_AGENT_NAME=your-foundry-agent-name-or-id
 
 # Optional: Data paths
 KAGGLE_DATASET=henriqueyamahata/bank-marketing
@@ -102,6 +114,15 @@ For Kaggle authentication, you can also place `~/.kaggle/kaggle.json`:
 - ✅ **Managed Identity**: RBAC-secured storage access
 - ✅ **Network Security**: Firewall rules + whitelisted IP access
 - ✅ **MLflow Tracking**: Experiment versioning and comparison
+- ✅ **Agentic Bridge**: Aggregate-only strategy validation and bounded UCB alpha enrichment
+
+### Optional Foundry Agent Bridge
+
+Run `python examples/run_bandits.py --use-agent` to validate summary metrics through `aml_bandits.foundry_bridge`. If `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`/`FOUNDRY_AGENT_NAME`, or the optional Foundry SDK packages are unavailable, the code uses a deterministic local fallback. The bridge sends only aggregate policy metrics and allows only bounded UCB alpha recommendations; it never sends raw customer rows.
+
+### Azure ML Compute Templates
+
+Placeholder compute templates live in `azure-ml/compute_instance.yml` and `azure-ml/compute_kubernetes.yml`. Replace placeholders through your deployment process before running `az ml compute create --file ...`; do not commit concrete subscription, workspace, AKS, or identity values.
 
 ### How to Connect from VS Code
 
@@ -129,14 +150,19 @@ aml-foundry-integration/
 │       ├── bandits.py           # Policy implementations
 │       ├── simulator.py         # Bandit simulation engine
 │       ├── metrics.py           # Evaluation metrics
+│       ├── foundry_bridge.py    # Aggregate-only Foundry agent bridge
 │       └── utils.py             # Utilities
 ├── notebooks/
 │   └── demo.ipynb              # Interactive demonstration
 ├── examples/
-│   └── run_bandits.py          # Standalone CLI runner
+│   ├── run_bandits.py          # Standalone CLI runner
+│   ├── job_config.yaml         # Azure ML compute instance job template
+│   └── job_config_kubernetes.yaml # Azure ML AKS-backed job template
+├── azure-ml/
+│   ├── compute_instance.yml    # Compute instance template
+│   └── compute_kubernetes.yml  # AKS-backed Kubernetes compute template
 └── docs/
     ├── architecture.md          # System design
-    ├── azure_integration.md     # Detailed AML setup
     └── algorithms.md            # Algorithm explanations
 ```
 
@@ -149,7 +175,11 @@ from aml_bandits import (
     load_bank_marketing_dataset,
     preprocess_data,
     build_bandit_environment,
-    run_simulation,
+  BanditSimulator,
+  UCBPolicy,
+  compute_metrics,
+  build_aggregate_metrics,
+  validate_and_enrich_strategy,
 )
 
 # 1. Load data (Kaggle → Local → OpenML)
@@ -162,11 +192,16 @@ X, y, preprocessor = preprocess_data(raw_df, target_col)
 # 3. Create synthetic bandit environment
 contexts, offer_catalog, all_probs, margins = build_bandit_environment(X, preprocessor)
 
-# 4. Run policies (baseline, UCB, Thompson Sampling)
-results = run_simulation(contexts, all_probs, margins)
+# 4. Run a policy and evaluate it
+simulator = BanditSimulator(all_probs, margins)
+ucb = UCBPolicy(n_arms=len(margins), margins_arr=margins, alpha=1.2)
+results = simulator.run_policy("UCB", ucb)
+summary = compute_metrics(results)
 
-# 5. Evaluate
-print(results.summary_metrics())
+# 5. Ask the agent bridge to validate aggregate evidence
+evidence = build_aggregate_metrics(summary, current_ucb_alpha=1.2)
+recommendation = validate_and_enrich_strategy(evidence)
+print(recommendation)
 ```
 
 ## Algorithms

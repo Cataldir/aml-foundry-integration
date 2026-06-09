@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { name = "Ricardo Cataldi", email = "ricardo@cataldi.dev" }
+    { name = "Ricardo Cataldi", email = "rcataldi@microsoft.com" }
 ]
 keywords = [
     "azure-machine-learning",
@@ -49,6 +49,10 @@ azure = [
     "azure-identity>=1.10.0",
     "azure-storage-blob>=12.10.0",
 ]
+foundry = [
+    "azure-ai-projects>=1.0.0b11",
+    "azure-identity>=1.10.0",
+]
 kaggle = [
     "kaggle>=1.5.0",
 ]
@@ -71,7 +75,7 @@ dev = [
     "isort>=5.10.0",
 ]
 all = [
-    "aml-foundry-integration[azure,kaggle,ml,notebooks,dev]",
+    "aml-foundry-integration[azure,foundry,kaggle,ml,notebooks,dev]",
 ]
 
 [project.urls]

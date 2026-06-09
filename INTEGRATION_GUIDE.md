@@ -64,6 +64,14 @@ WORKSPACE_LOCATION=<your-workspace-region>
 # Compute targets
 COMPUTE_INSTANCE_NAME=<your-compute-instance-name>
 KUBERNETES_CLUSTER_NAME=<your-kubernetes-compute-name>
+AZURE_ML_WORKSPACE=<your-aml-workspace-name>
+AZURE_ML_COMPUTE_INSTANCE_NAME=<your-compute-instance-name>
+AZURE_ML_COMPUTE_AKS_NAME=<your-kubernetes-compute-name>
+
+# Optional aggregate-only Foundry bridge
+FOUNDRY_PROJECT_ENDPOINT=<your-foundry-project-endpoint>
+FOUNDRY_AGENT_ID=<your-foundry-agent-id>
+FOUNDRY_AGENT_NAME=<your-foundry-agent-name-or-id>
 
 # Storage
 STORAGE_ACCOUNT_NAME=<your-storage-account-name>
@@ -209,6 +217,28 @@ az ml compute show -n <your-kubernetes-compute-name> -g <your-resource-group> -w
 ```powershell
 az ml job create --file examples/job_config_kubernetes.yaml -g <your-resource-group> -w <your-aml-workspace-name>
 ```
+
+### Step 5c: Create Placeholder Compute Targets
+
+This repository includes placeholder-only Azure ML compute templates:
+
+```powershell
+az ml compute create --file azure-ml/compute_instance.yml -g <your-resource-group> -w <your-aml-workspace-name>
+az ml compute create --file azure-ml/compute_kubernetes.yml -g <your-resource-group> -w <your-aml-workspace-name>
+```
+
+Replace placeholders outside source control before submitting. The Kubernetes template expects an existing AKS resource ID, namespace, and managed identity resource ID.
+
+## Part 5b: Optional Foundry Agent Bridge
+
+The runner can call an Azure AI Foundry agent using only aggregate policy metrics:
+
+```powershell
+pip install -e ".[foundry]"
+python examples/run_bandits.py --use-agent
+```
+
+If the Foundry endpoint, agent ID/name, SDK, or credentials are unavailable, `aml_bandits.foundry_bridge` uses a deterministic local fallback. The bridge contract allows only a bounded UCB alpha recommendation and does not send raw customer-level rows.
 
 ## Part 6: VS Code Extensions & Configuration
 

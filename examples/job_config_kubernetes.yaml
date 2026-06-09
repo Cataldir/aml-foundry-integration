@@ -1,0 +1,15 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: bandits-kubernetes
+experiment_name: bandits-datathon
+description: Run the AML bandits pipeline on an Azure ML Kubernetes compute target backed by AKS.
+code: ..
+command: >-
+  python -m pip install -e ".[foundry,kaggle]" &&
+  python examples/run_bandits.py --use-agent
+environment: azureml://registries/azureml/environments/sklearn-1.5/labels/latest
+compute: azureml:<your-kubernetes-compute-name>
+environment_variables:
+  FOUNDRY_PROJECT_ENDPOINT: <your-foundry-project-endpoint>
+  FOUNDRY_AGENT_ID: <your-foundry-agent-id>
+  FOUNDRY_AGENT_NAME: <your-foundry-agent-name-or-id>

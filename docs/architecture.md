@@ -43,6 +43,12 @@ This project implements a complete machine learning pipeline for adaptive experi
 └────────┬─────────────────────────┘
          │
          v
+┌────────────────────────────────────┐
+│  Foundry Agent Bridge (Optional)   │
+│  aggregate-only validation         │
+└────────┬───────────────────────────┘
+         │
+         v
 ┌────────────────────────────────┐
 │  Results Visualization         │
 │  (plots, tables, reports)      │
@@ -104,6 +110,10 @@ Three distinct policies implemented in `bandits.py`:
 - **Conversion rate**: Effective offer acceptance
 - **Exploration share**: Exploration vs exploitation balance
 - **Windowed metrics**: Learning curves per policy
+
+### Foundry Agent Bridge
+
+`foundry_bridge.py` is an optional adapter/facade around Azure AI Foundry agent concepts. It receives only aggregate summary metrics, validates the strategy, and can recommend a bounded UCB alpha. When Foundry SDK packages or environment variables are unavailable, it uses a deterministic local fallback with the same safe contract.
 
 ## Execution Modes
 
@@ -168,5 +178,8 @@ az ml job create --file examples/job_config_kubernetes.yaml -g <your-resource-gr
 - Compute Instance: your Azure ML compute instance
 - Kubernetes Cluster: your Azure ML Kubernetes compute target
 - Storage: your workspace storage account using managed identity auth
+- Foundry Agent Bridge: optional aggregate-only validation path controlled by `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_AGENT_ID` or `FOUNDRY_AGENT_NAME`
+
+Placeholder Azure ML compute templates are in `azure-ml/compute_instance.yml` and `azure-ml/compute_kubernetes.yml`. They intentionally use placeholders only and must be resolved outside source control before running `az ml compute create`.
 
 See `INTEGRATION_GUIDE.md` for detailed setup instructions.

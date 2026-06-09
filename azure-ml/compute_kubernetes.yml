@@ -1,0 +1,10 @@
+$schema: https://azuremlschemas.azureedge.net/latest/kubernetesCompute.schema.json
+type: kubernetes
+name: ${AZURE_ML_COMPUTE_AKS_NAME}
+description: Placeholder AKS-backed Azure ML Kubernetes compute target.
+resource_id: ${AZURE_ML_AKS_RESOURCE_ID}
+namespace: ${AZURE_ML_AKS_NAMESPACE}
+identity:
+  type: user_assigned
+  user_assigned_identities:
+    - resource_id: ${AZURE_ML_USER_ASSIGNED_IDENTITY_RESOURCE_ID}

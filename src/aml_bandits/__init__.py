@@ -14,6 +14,15 @@ from aml_bandits.bandits import (
 )
 from aml_bandits.simulator import BanditSimulator, build_bandit_environment
 from aml_bandits.metrics import compute_metrics
+from aml_bandits.foundry_bridge import (
+    AgentResponse,
+    AggregateMetrics,
+    EnrichedRecommendation,
+    apply_safe_ucb_alpha,
+    build_aggregate_metrics,
+    send_aggregate_to_agent,
+    validate_and_enrich_strategy,
+)
 
 __all__ = [
     "load_bank_marketing_dataset",
@@ -24,4 +33,11 @@ __all__ = [
     "BanditSimulator",
     "build_bandit_environment",
     "compute_metrics",
+    "AgentResponse",
+    "AggregateMetrics",
+    "EnrichedRecommendation",
+    "apply_safe_ucb_alpha",
+    "build_aggregate_metrics",
+    "send_aggregate_to_agent",
+    "validate_and_enrich_strategy",
 ]

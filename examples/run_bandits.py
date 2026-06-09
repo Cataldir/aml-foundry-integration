@@ -26,11 +26,20 @@ from aml_bandits import (
     build_bandit_environment,
     BanditSimulator,
     compute_metrics,
+    apply_safe_ucb_alpha,
+    build_aggregate_metrics,
+    validate_and_enrich_strategy,
 )
 from aml_bandits.utils import set_random_seed, create_output_dir
 
 
-def main():
+@click.command()
+@click.option(
+    "--use-agent/--no-agent",
+    default=False,
+    help="Validate aggregate metrics with the Foundry bridge or local fallback.",
+)
+def main(use_agent: bool):
     """Run complete multi-armed bandits pipeline."""
     set_random_seed(42)
 
@@ -101,6 +110,29 @@ def main():
     print("\n[7/7] Computing metrics...")
     sim_all = pd.concat([sim_baseline, sim_ucb, sim_ts], ignore_index=True)
     summary = compute_metrics(sim_all)
+
+    if use_agent:
+        print("\n[Agent] Validating aggregate evidence only...")
+        aggregate = build_aggregate_metrics(summary, current_ucb_alpha=1.2)
+        recommendation = validate_and_enrich_strategy(aggregate)
+        print(f"  ✓ Source: {recommendation.source}")
+        print(f"  ✓ Validation: {recommendation.validation}")
+        print(f"  ✓ Rationale: {recommendation.rationale}")
+        for warning in recommendation.warnings:
+            print(f"  ! {warning}")
+
+        if recommendation.accepted and recommendation.bounded_ucb_alpha is not None:
+            recommended_policy = apply_safe_ucb_alpha(
+                UCBPolicy(n_arms=n_arms, margins_arr=margins, alpha=1.2),
+                recommendation.bounded_ucb_alpha,
+            )
+            sim_ucb_agent = simulator.run_policy("UCB (Agent Recommended)", recommended_policy)
+            sim_all = pd.concat([sim_all, sim_ucb_agent], ignore_index=True)
+            summary = compute_metrics(sim_all)
+            print(
+                "  ✓ Added UCB (Agent Recommended) candidate "
+                f"with alpha={recommendation.bounded_ucb_alpha:.3f}"
+            )
 
     print("\n" + "=" * 80)
     print("RESULTS SUMMARY")

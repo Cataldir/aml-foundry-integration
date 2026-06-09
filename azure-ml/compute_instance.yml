@@ -1,0 +1,6 @@
+$schema: https://azuremlschemas.azureedge.net/latest/computeInstance.schema.json
+type: computeinstance
+name: ${AZURE_ML_COMPUTE_INSTANCE_NAME}
+size: ${AZURE_ML_COMPUTE_INSTANCE_SIZE}
+description: Placeholder compute instance for AML bandits experimentation.
+idle_time_before_shutdown: PT30M
