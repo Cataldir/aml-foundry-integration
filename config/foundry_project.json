@@ -17,5 +17,13 @@
       "finance-orchestrator",
       "hr-orchestrator"
     ]
+  },
+  "feature_store": {
+    "resource_group": "rg-microsoft-iq",
+    "name": "miq-7mlet-feature-store",
+    "location": "eastus",
+    "offline_store": "/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.Storage/storageAccounts/miq7mletstorage9d037fcb2/blobServices/default/containers/miq7mletcontainec50a8368",
+    "storage_account": "/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.Storage/storageAccounts/miq7mletstorage9d037fcb2",
+    "materialization_identity": "/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.ManagedIdentity/userAssignedIdentities/materialization-uai-7ba3a59a854d382995b65a47a6834cff"
   }
 }

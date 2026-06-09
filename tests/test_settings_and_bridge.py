@@ -31,6 +31,8 @@ def test_project_defaults_bind_to_rg_microsoft_iq() -> None:
     assert defaults.azure_ml.workspace_name == "aml-sample"
     assert defaults.foundry.project_name == "miq-project-miqsec26"
     assert defaults.foundry.project_endpoint.endswith("/api/projects/miq-project-miqsec26")
+    assert defaults.feature_store.name == "miq-7mlet-feature-store"
+    assert defaults.feature_store.location == "eastus"
 
 
 def test_resolve_foundry_agent_uses_finance_orchestrator_by_default() -> None:

@@ -102,8 +102,9 @@ FOUNDRY_STRATEGY_AGENT_NAME=finance-orchestrator
 # Optional Azure ML feature-store artifacts
 AZUREML_FEATURE_TABLE_ASSET_NAME=bank-marketing-feature-table
 AZUREML_FEATURE_BUNDLE_ASSET_NAME=bank-marketing-feature-bundle
-AZUREML_FEATURE_STORE_NAME=your-feature-store-name
-AZUREML_FEATURE_STORE_LOCATION=your-feature-store-region
+AZUREML_FEATURE_STORE_RESOURCE_GROUP=rg-microsoft-iq
+AZUREML_FEATURE_STORE_NAME=miq-7mlet-feature-store
+AZUREML_FEATURE_STORE_LOCATION=eastus
 ENABLE_AZUREML_FEATURE_STORE_CREATE=false
 ENABLE_AZUREML_DATA_IMPORT=false
 

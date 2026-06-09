@@ -32,9 +32,20 @@ class FoundryDefaults:
 
 
 @dataclass(frozen=True)
+class FeatureStoreDefaults:
+    resource_group: str
+    name: str
+    location: str
+    offline_store: str
+    storage_account: str
+    materialization_identity: str
+
+
+@dataclass(frozen=True)
 class ProjectDefaults:
     azure_ml: AzureMLDefaults
     foundry: FoundryDefaults
+    feature_store: FeatureStoreDefaults
 
 
 DEFAULT_PROJECT = ProjectDefaults(
@@ -57,6 +68,14 @@ DEFAULT_PROJECT = ProjectDefaults(
             "hr-orchestrator",
         ),
     ),
+    feature_store=FeatureStoreDefaults(
+        resource_group="rg-microsoft-iq",
+        name="miq-7mlet-feature-store",
+        location="eastus",
+        offline_store="/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.Storage/storageAccounts/miq7mletstorage9d037fcb2/blobServices/default/containers/miq7mletcontainec50a8368",
+        storage_account="/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.Storage/storageAccounts/miq7mletstorage9d037fcb2",
+        materialization_identity="/subscriptions/150e82e8-25db-4f1a-8e04-a2f6a77d26c4/resourceGroups/rg-microsoft-iq/providers/Microsoft.ManagedIdentity/userAssignedIdentities/materialization-uai-7ba3a59a854d382995b65a47a6834cff",
+    ),
 )
 
 
@@ -69,6 +88,7 @@ def load_project_defaults(config_path: str | Path | None = None) -> ProjectDefau
     payload = json.loads(path.read_text(encoding="utf-8"))
     azure_ml = payload.get("azure_ml", {})
     foundry = payload.get("foundry", {})
+    feature_store = payload.get("feature_store", {})
     return ProjectDefaults(
         azure_ml=AzureMLDefaults(
             resource_group=str(azure_ml.get("resource_group", DEFAULT_PROJECT.azure_ml.resource_group)),
@@ -97,6 +117,25 @@ def load_project_defaults(config_path: str | Path | None = None) -> ProjectDefau
                 )
             ),
         ),
+        feature_store=FeatureStoreDefaults(
+            resource_group=str(
+                feature_store.get("resource_group", DEFAULT_PROJECT.feature_store.resource_group)
+            ),
+            name=str(feature_store.get("name", DEFAULT_PROJECT.feature_store.name)),
+            location=str(feature_store.get("location", DEFAULT_PROJECT.feature_store.location)),
+            offline_store=str(
+                feature_store.get("offline_store", DEFAULT_PROJECT.feature_store.offline_store)
+            ),
+            storage_account=str(
+                feature_store.get("storage_account", DEFAULT_PROJECT.feature_store.storage_account)
+            ),
+            materialization_identity=str(
+                feature_store.get(
+                    "materialization_identity",
+                    DEFAULT_PROJECT.feature_store.materialization_identity,
+                )
+            ),
+        ),
     )
 
 
@@ -106,6 +145,15 @@ def apply_project_environment_defaults(defaults: ProjectDefaults | None = None) 
     os.environ.setdefault("AZUREML_RESOURCE_GROUP", resolved.azure_ml.resource_group)
     os.environ.setdefault("AZUREML_WORKSPACE_NAME", resolved.azure_ml.workspace_name)
     os.environ.setdefault("AZUREML_LOCATION", resolved.azure_ml.location)
+    os.environ.setdefault("AZUREML_FEATURE_STORE_RESOURCE_GROUP", resolved.feature_store.resource_group)
+    os.environ.setdefault("AZUREML_FEATURE_STORE_NAME", resolved.feature_store.name)
+    os.environ.setdefault("AZUREML_FEATURE_STORE_LOCATION", resolved.feature_store.location)
+    os.environ.setdefault("AZUREML_FEATURE_STORE_OFFLINE_STORE", resolved.feature_store.offline_store)
+    os.environ.setdefault("AZUREML_FEATURE_STORE_STORAGE_ACCOUNT", resolved.feature_store.storage_account)
+    os.environ.setdefault(
+        "AZUREML_FEATURE_STORE_MATERIALIZATION_IDENTITY",
+        resolved.feature_store.materialization_identity,
+    )
     os.environ.setdefault("FOUNDRY_PROJECT_RESOURCE_GROUP", resolved.foundry.resource_group)
     os.environ.setdefault("FOUNDRY_ACCOUNT_NAME", resolved.foundry.account_name)
     os.environ.setdefault("FOUNDRY_PROJECT_NAME", resolved.foundry.project_name)
@@ -164,6 +212,14 @@ def project_summary(defaults: ProjectDefaults | None = None) -> dict[str, Any]:
             "feature_agent_name": resolved.foundry.feature_agent_name,
             "strategy_agent_name": resolved.foundry.strategy_agent_name,
             "available_agents": list(resolved.foundry.available_agents),
+        },
+        "feature_store": {
+            "resource_group": resolved.feature_store.resource_group,
+            "name": resolved.feature_store.name,
+            "location": resolved.feature_store.location,
+            "offline_store": resolved.feature_store.offline_store,
+            "storage_account": resolved.feature_store.storage_account,
+            "materialization_identity": resolved.feature_store.materialization_identity,
         },
     }
 
