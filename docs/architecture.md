@@ -23,6 +23,18 @@ This project implements a complete machine learning pipeline for adaptive experi
 └────────┬─────────────────────┘
          │
          v
+┌────────────────────────────────────┐
+│  Feature Store Artifacts           │
+│  MLTable + feature schema/reports   │
+└────────┬───────────────────────────┘
+         │
+         v
+┌────────────────────────────────────┐
+│  Agentic Feature Discovery         │
+│  aggregate-only conditions/proposal │
+└────────┬───────────────────────────┘
+         │
+         v
 ┌──────────────────────────────────┐
 │  Synthetic Bandit Environment    │
 │  (contexts, offers, probs)       │
@@ -114,6 +126,21 @@ Three distinct policies implemented in `bandits.py`:
 ### Foundry Agent Bridge
 
 `foundry_bridge.py` is an optional adapter/facade around Azure AI Foundry agent concepts. It receives only aggregate summary metrics, validates the strategy, and can recommend a bounded UCB alpha. When Foundry SDK packages or environment variables are unavailable, it uses a deterministic local fallback with the same safe contract.
+
+The same bridge now supports aggregate-only feature discovery. The notebook builds feature evidence from schema names, missing rates, cardinality, hashed category tokens, and aggregate target-signal summaries. The feature agent can accept base features, reject risky features, and propose derived features such as contact-pressure or prior-contact indicators. Raw rows never leave the data layer.
+
+### Feature Store Artifacts
+
+The notebook creates a Feature Store-ready artifact bundle after leakage control:
+
+- curated feature table with `feature_row_id` and `event_time`
+- `MLTable` metadata for Azure ML table registration
+- feature schema JSON with entity and timestamp columns
+- aggregate feature profile payload sent to the agent
+- feature discovery response JSON
+- optional Azure ML Feature Store, entity, and feature set YAML specs
+
+Azure ML data asset registration is always attempted when `MLClient` can authenticate: the curated feature table is registered as `AssetTypes.MLTABLE`, and the full artifact bundle is registered as `AssetTypes.URI_FOLDER`. First-class Feature Store creation is gated by `ENABLE_AZUREML_FEATURE_STORE_CREATE=true` because it may create Azure resources and requires feature-store permissions.
 
 ## Execution Modes
 

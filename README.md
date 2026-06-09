@@ -11,12 +11,13 @@ This repository implements a reproducible pipeline for adaptive offer/message se
 ### Key Components
 
 - **Data Pipeline**: Kaggle-first loading with local/OpenML fallback
+- **Feature Store Path**: Curated feature table, MLTable metadata, feature-discovery reports, and optional Azure ML Feature Store specs
 - **Classical ML**: Preprocessing with explicit leakage handling
 - **Bandits**: Deterministic baseline, UCB (Upper Confidence Bound), Thompson Sampling (Beta-Bernoulli)
 - **Evaluation**: Synthetic contextual environment with delayed rewards
 - **Metrics**: Cumulative reward, regret, conversion rate, exploration share
 - **Azure ML Integration**: Native support for Foundry compute instances and Kubernetes clusters
-- **Agentic Validation**: Optional aggregate-only Foundry bridge with local fallback for safe UCB alpha recommendations
+- **Agentic Validation**: Optional aggregate-only Foundry bridge with local fallback for feature discovery and safe UCB alpha recommendations
 
 ## Quick Start
 
@@ -91,6 +92,13 @@ FOUNDRY_PROJECT_ENDPOINT=your-foundry-project-endpoint
 FOUNDRY_AGENT_ID=your-foundry-agent-id
 FOUNDRY_AGENT_NAME=your-foundry-agent-name-or-id
 
+# Optional Azure ML feature-store artifacts
+AZUREML_FEATURE_TABLE_ASSET_NAME=bank-marketing-feature-table
+AZUREML_FEATURE_BUNDLE_ASSET_NAME=bank-marketing-feature-bundle
+AZUREML_FEATURE_STORE_NAME=your-feature-store-name
+AZUREML_FEATURE_STORE_LOCATION=your-feature-store-region
+ENABLE_AZUREML_FEATURE_STORE_CREATE=false
+
 # Optional: Data paths
 KAGGLE_DATASET=henriqueyamahata/bank-marketing
 DATA_DIR=./data
@@ -114,11 +122,16 @@ For Kaggle authentication, you can also place `~/.kaggle/kaggle.json`:
 - ✅ **Managed Identity**: RBAC-secured storage access
 - ✅ **Network Security**: Firewall rules + whitelisted IP access
 - ✅ **MLflow Tracking**: Experiment versioning and comparison
-- ✅ **Agentic Bridge**: Aggregate-only strategy validation and bounded UCB alpha enrichment
+- ✅ **Feature Store Artifacts**: Curated feature table, MLTable metadata, feature schema, and discovery reports
+- ✅ **Agentic Bridge**: Aggregate-only feature discovery plus strategy validation and bounded UCB alpha enrichment
 
 ### Optional Foundry Agent Bridge
 
 Run `python examples/run_bandits.py --use-agent` to validate summary metrics through `aml_bandits.foundry_bridge`. If `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`/`FOUNDRY_AGENT_NAME`, or the optional Foundry SDK packages are unavailable, the code uses a deterministic local fallback. The bridge sends only aggregate policy metrics and allows only bounded UCB alpha recommendations; it never sends raw customer rows.
+
+The notebook also uses the same bridge pattern for feature discovery. It sends aggregate feature evidence only: schema names, missingness, cardinality, hashed category tokens, and aggregate signal summaries. It materializes a curated feature table, an `MLTable`, a feature schema, the agent payload, and the discovery response under the configured feature artifact folder. The notebook registers both an Azure ML `MLTABLE` asset for the curated feature table and a `URI_FOLDER` asset for the complete feature artifact bundle when Azure ML credentials are available.
+
+First-class Azure ML Feature Store creation is intentionally gated. The notebook writes CLI-ready Feature Store, entity, and feature set specs, but it only runs the `az ml feature-store`, `az ml feature-store-entity`, and `az ml feature-set` commands when `ENABLE_AZUREML_FEATURE_STORE_CREATE=true`. This prevents accidental resource creation while still showing the production path.
 
 ### Azure ML Compute Templates
 
@@ -189,16 +202,19 @@ print(f"Loaded from: {provenance}")
 # 2. Preprocess with leakage control
 X, y, preprocessor = preprocess_data(raw_df, target_col)
 
-# 3. Create synthetic bandit environment
+# 3. In the notebook, build feature-store artifacts and agent-reviewed feature propositions
+#    before creating the synthetic bandit environment.
+
+# 4. Create synthetic bandit environment
 contexts, offer_catalog, all_probs, margins = build_bandit_environment(X, preprocessor)
 
-# 4. Run a policy and evaluate it
+# 5. Run a policy and evaluate it
 simulator = BanditSimulator(all_probs, margins)
 ucb = UCBPolicy(n_arms=len(margins), margins_arr=margins, alpha=1.2)
 results = simulator.run_policy("UCB", ucb)
 summary = compute_metrics(results)
 
-# 5. Ask the agent bridge to validate aggregate evidence
+# 6. Ask the agent bridge to validate aggregate evidence
 evidence = build_aggregate_metrics(summary, current_ucb_alpha=1.2)
 recommendation = validate_and_enrich_strategy(evidence)
 print(recommendation)

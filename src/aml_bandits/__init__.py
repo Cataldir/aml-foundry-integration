@@ -18,10 +18,14 @@ from aml_bandits.foundry_bridge import (
     AgentResponse,
     AggregateMetrics,
     EnrichedRecommendation,
+    FeatureDiscoveryResponse,
     apply_safe_ucb_alpha,
     build_aggregate_metrics,
+    build_feature_discovery_payload,
     send_aggregate_to_agent,
+    send_feature_profile_to_agent,
     validate_and_enrich_strategy,
+    validate_and_propose_features,
 )
 
 __all__ = [
@@ -36,8 +40,12 @@ __all__ = [
     "AgentResponse",
     "AggregateMetrics",
     "EnrichedRecommendation",
+    "FeatureDiscoveryResponse",
     "apply_safe_ucb_alpha",
     "build_aggregate_metrics",
+    "build_feature_discovery_payload",
     "send_aggregate_to_agent",
+    "send_feature_profile_to_agent",
     "validate_and_enrich_strategy",
+    "validate_and_propose_features",
 ]
