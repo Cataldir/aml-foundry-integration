@@ -11,6 +11,7 @@ This repository implements a reproducible pipeline for adaptive offer/message se
 ### Key Components
 
 - **Data Pipeline**: Kaggle-first loading with local/OpenML fallback
+- **Data Import Layer**: Source manifest plus gated `az ml data import` materialization into Azure ML
 - **Feature Store Path**: Curated feature table, MLTable metadata, feature-discovery reports, and optional Azure ML Feature Store specs
 - **Classical ML**: Preprocessing with explicit leakage handling
 - **Bandits**: Deterministic baseline, UCB (Upper Confidence Bound), Thompson Sampling (Beta-Bernoulli)
@@ -81,16 +82,22 @@ KAGGLE_KEY=your_api_key
 
 # Azure ML
 SUBSCRIPTION_ID=your-subscription-id
-RESOURCE_GROUP=your-resource-group
-WORKSPACE_NAME=your-aml-workspace-name
-AZURE_ML_WORKSPACE=your-aml-workspace-name
+RESOURCE_GROUP=rg-microsoft-iq
+WORKSPACE_NAME=aml-sample
+AZURE_ML_WORKSPACE=aml-sample
+AZUREML_RESOURCE_GROUP=rg-microsoft-iq
+AZUREML_WORKSPACE_NAME=aml-sample
 AZURE_ML_COMPUTE_INSTANCE_NAME=your-compute-instance-name
 AZURE_ML_COMPUTE_AKS_NAME=your-kubernetes-compute-name
 
-# Optional Azure AI Foundry agent bridge
-FOUNDRY_PROJECT_ENDPOINT=your-foundry-project-endpoint
-FOUNDRY_AGENT_ID=your-foundry-agent-id
-FOUNDRY_AGENT_NAME=your-foundry-agent-name-or-id
+# Azure AI Foundry project and deployed agents in rg-microsoft-iq
+FOUNDRY_PROJECT_RESOURCE_GROUP=rg-microsoft-iq
+FOUNDRY_ACCOUNT_NAME=ai-miq-miqsec26
+FOUNDRY_PROJECT_NAME=miq-project-miqsec26
+FOUNDRY_PROJECT_ENDPOINT=https://ai-miq-miqsec26.services.ai.azure.com/api/projects/miq-project-miqsec26
+FOUNDRY_AVAILABLE_AGENTS=consultor-de-camiseta,finance-orchestrator,hr-orchestrator
+FOUNDRY_FEATURE_AGENT_NAME=finance-orchestrator
+FOUNDRY_STRATEGY_AGENT_NAME=finance-orchestrator
 
 # Optional Azure ML feature-store artifacts
 AZUREML_FEATURE_TABLE_ASSET_NAME=bank-marketing-feature-table
@@ -98,6 +105,7 @@ AZUREML_FEATURE_BUNDLE_ASSET_NAME=bank-marketing-feature-bundle
 AZUREML_FEATURE_STORE_NAME=your-feature-store-name
 AZUREML_FEATURE_STORE_LOCATION=your-feature-store-region
 ENABLE_AZUREML_FEATURE_STORE_CREATE=false
+ENABLE_AZUREML_DATA_IMPORT=false
 
 # Optional: Data paths
 KAGGLE_DATASET=henriqueyamahata/bank-marketing
@@ -122,14 +130,27 @@ For Kaggle authentication, you can also place `~/.kaggle/kaggle.json`:
 - ✅ **Managed Identity**: RBAC-secured storage access
 - ✅ **Network Security**: Firewall rules + whitelisted IP access
 - ✅ **MLflow Tracking**: Experiment versioning and comparison
+- ✅ **Formal Data Import**: Source manifest and gated Azure ML data import command generation
 - ✅ **Feature Store Artifacts**: Curated feature table, MLTable metadata, feature schema, and discovery reports
 - ✅ **Agentic Bridge**: Aggregate-only feature discovery plus strategy validation and bounded UCB alpha enrichment
+
+### Notebook Segregation
+
+The notebook set is separated by responsibility:
+
+- `notebooks/00_environment_and_foundry_agents.ipynb`: dependency bootstrap, Azure ML defaults, Foundry project binding, and deployed agent inventory.
+- `notebooks/01_data_sources_assets_imports.ipynb`: data materialization, source manifest, gated `az ml data import`, raw asset registration, and data loading.
+- `notebooks/02_feature_store_and_feature_agent.ipynb`: feature profiling, aggregate-only feature agent loop, MLTable asset registration, and Feature Store specs.
+- `notebooks/03_bandit_strategy_agent_loop.ipynb`: contextual bandit simulation plus aggregate-only strategy agent validation.
+- `notebooks/demo.ipynb`: end-to-end runnable flow for the datathon.
 
 ### Optional Foundry Agent Bridge
 
 Run `python examples/run_bandits.py --use-agent` to validate summary metrics through `aml_bandits.foundry_bridge`. If `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`/`FOUNDRY_AGENT_NAME`, or the optional Foundry SDK packages are unavailable, the code uses a deterministic local fallback. The bridge sends only aggregate policy metrics and allows only bounded UCB alpha recommendations; it never sends raw customer rows.
 
-The notebook also uses the same bridge pattern for feature discovery. It sends aggregate feature evidence only: schema names, missingness, cardinality, hashed category tokens, and aggregate signal summaries. It materializes a curated feature table, an `MLTable`, a feature schema, the agent payload, and the discovery response under the configured feature artifact folder. The notebook registers both an Azure ML `MLTABLE` asset for the curated feature table and a `URI_FOLDER` asset for the complete feature artifact bundle when Azure ML credentials are available.
+The notebook also uses the same bridge pattern for feature discovery. It sends aggregate feature evidence only: schema names, missingness, cardinality, hashed category tokens, and aggregate signal summaries. It materializes a curated feature table, an `MLTable`, a feature schema, the agent payload, and the discovery response under the configured feature artifact folder. The notebook registers both an Azure ML `MLTABLE` asset for the curated feature table and a `URI_FOLDER` asset for the complete feature artifact bundle when Azure ML credentials are available. Both the feature-discovery loop and strategy-validation loop default to the deployed `finance-orchestrator` agent in the `miq-project-miqsec26` Foundry project.
+
+The data ingestion notebooks now write a source manifest and an Azure ML data import specification before SDK asset registration. They print the exact `az ml data import` command and run it only when `ENABLE_AZUREML_DATA_IMPORT=true`.
 
 First-class Azure ML Feature Store creation is intentionally gated. The notebook writes CLI-ready Feature Store, entity, and feature set specs, but it only runs the `az ml feature-store`, `az ml feature-store-entity`, and `az ml feature-set` commands when `ENABLE_AZUREML_FEATURE_STORE_CREATE=true`. This prevents accidental resource creation while still showing the production path.
 
@@ -166,7 +187,13 @@ aml-foundry-integration/
 │       ├── foundry_bridge.py    # Aggregate-only Foundry agent bridge
 │       └── utils.py             # Utilities
 ├── notebooks/
-│   └── demo.ipynb              # Interactive demonstration
+│   ├── 00_environment_and_foundry_agents.ipynb
+│   ├── 01_data_sources_assets_imports.ipynb
+│   ├── 02_feature_store_and_feature_agent.ipynb
+│   ├── 03_bandit_strategy_agent_loop.ipynb
+│   └── demo.ipynb              # End-to-end interactive demonstration
+├── config/
+│   └── foundry_project.json    # Non-secret rg-microsoft-iq Foundry binding
 ├── examples/
 │   ├── run_bandits.py          # Standalone CLI runner
 │   ├── job_config.yaml         # Azure ML compute instance job template

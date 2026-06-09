@@ -1,0 +1,21 @@
+{
+  "azure_ml": {
+    "resource_group": "rg-microsoft-iq",
+    "workspace_name": "aml-sample",
+    "location": "eastus"
+  },
+  "foundry": {
+    "resource_group": "rg-microsoft-iq",
+    "account_name": "ai-miq-miqsec26",
+    "project_name": "miq-project-miqsec26",
+    "project_endpoint": "https://ai-miq-miqsec26.services.ai.azure.com/api/projects/miq-project-miqsec26",
+    "location": "swedencentral",
+    "feature_agent_name": "finance-orchestrator",
+    "strategy_agent_name": "finance-orchestrator",
+    "available_agents": [
+      "consultor-de-camiseta",
+      "finance-orchestrator",
+      "hr-orchestrator"
+    ]
+  }
+}

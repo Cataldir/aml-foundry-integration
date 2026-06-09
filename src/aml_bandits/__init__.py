@@ -27,6 +27,13 @@ from aml_bandits.foundry_bridge import (
     validate_and_enrich_strategy,
     validate_and_propose_features,
 )
+from aml_bandits.settings import (
+    DEFAULT_PROJECT,
+    apply_project_environment_defaults,
+    load_project_defaults,
+    project_summary,
+    resolve_foundry_agent,
+)
 
 __all__ = [
     "load_bank_marketing_dataset",
@@ -48,4 +55,9 @@ __all__ = [
     "send_feature_profile_to_agent",
     "validate_and_enrich_strategy",
     "validate_and_propose_features",
+    "DEFAULT_PROJECT",
+    "apply_project_environment_defaults",
+    "load_project_defaults",
+    "project_summary",
+    "resolve_foundry_agent",
 ]

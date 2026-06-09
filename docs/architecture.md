@@ -17,6 +17,12 @@ This project implements a complete machine learning pipeline for adaptive experi
 └────────┬─────────────────┘
          │
          v
+┌────────────────────────────────────┐
+│  Data Source / Import Layer        │
+│  manifest + gated az ml import     │
+└────────┬───────────────────────────┘
+         │
+         v
 ┌──────────────────────────────┐
 │  Preprocessing Layer         │
 │  (leakage control, features) │
@@ -77,6 +83,12 @@ This project implements a complete machine learning pipeline for adaptive experi
   - Final fallback to OpenML `bank-marketing` dataset
   - Returns provenance tracking for reproducibility
 
+- **Data Import Layer**:
+   - Writes `raw_data_source_manifest.json` with source provenance, target workspace, and Foundry project binding
+   - Writes `raw_data_import.yml` for Azure ML data import
+   - Prints and optionally runs `az ml data import` when `ENABLE_AZUREML_DATA_IMPORT=true`
+   - Keeps SDK `Data(..., type=AssetTypes.URI_FOLDER)` registration as the deterministic fallback path
+
 - **Preprocessing** (`preprocessing.py`):
   - Removes `duration` column (leakage risk)
   - One-hot encodes categorical features
@@ -127,7 +139,9 @@ Three distinct policies implemented in `bandits.py`:
 
 `foundry_bridge.py` is an optional adapter/facade around Azure AI Foundry agent concepts. It receives only aggregate summary metrics, validates the strategy, and can recommend a bounded UCB alpha. When Foundry SDK packages or environment variables are unavailable, it uses a deterministic local fallback with the same safe contract.
 
-The same bridge now supports aggregate-only feature discovery. The notebook builds feature evidence from schema names, missing rates, cardinality, hashed category tokens, and aggregate target-signal summaries. The feature agent can accept base features, reject risky features, and propose derived features such as contact-pressure or prior-contact indicators. Raw rows never leave the data layer.
+The bridge is tied to the `rg-microsoft-iq` Foundry project by default through `config/foundry_project.json`. The discovered project endpoint is `https://ai-miq-miqsec26.services.ai.azure.com/api/projects/miq-project-miqsec26`, with deployed agents `consultor-de-camiseta`, `finance-orchestrator`, and `hr-orchestrator`. This financial bandit workload defaults both the feature-discovery and strategy-validation loops to `finance-orchestrator`.
+
+The same bridge supports aggregate-only feature discovery. The notebook builds feature evidence from schema names, missing rates, cardinality, hashed category tokens, and aggregate target-signal summaries. The feature agent can accept base features, reject risky features, and propose derived features such as contact-pressure or prior-contact indicators. Raw rows never leave the data layer.
 
 ### Feature Store Artifacts
 

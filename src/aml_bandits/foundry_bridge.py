@@ -5,12 +5,13 @@ Aggregate-only Azure AI Foundry bridge for bandit strategy validation.
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
+
+from aml_bandits.settings import resolve_foundry_agent
 
 try:  # pragma: no cover - optional Azure dependency
     from azure.core.exceptions import AzureError  # type: ignore[import-not-found]
@@ -100,13 +101,7 @@ def build_aggregate_metrics(
 def send_aggregate_to_agent(aggregate: AggregateMetrics | Mapping[str, Any]) -> AgentResponse:
     """Send aggregate evidence to Foundry when configured, otherwise use fallback."""
     evidence = _normalize_aggregate(aggregate)
-    endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT") or os.getenv("AZURE_AI_PROJECT_ENDPOINT")
-    agent_ref = (
-        os.getenv("FOUNDRY_AGENT_ID")
-        or os.getenv("AZURE_AI_AGENT_ID")
-        or os.getenv("FOUNDRY_AGENT_NAME")
-        or os.getenv("AZURE_AI_AGENT_NAME")
-    )
+    endpoint, agent_ref = resolve_foundry_agent("strategy")
 
     if not endpoint or not agent_ref:
         return _local_fallback_response(
@@ -207,17 +202,7 @@ def build_feature_discovery_payload(feature_profile: Mapping[str, Any]) -> dict[
 def send_feature_profile_to_agent(feature_profile: Mapping[str, Any]) -> FeatureDiscoveryResponse:
     """Send aggregate feature evidence to Foundry when configured, otherwise use fallback."""
     payload = build_feature_discovery_payload(feature_profile)
-    endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT") or os.getenv("AZURE_AI_PROJECT_ENDPOINT")
-    agent_ref = (
-        os.getenv("FOUNDRY_FEATURE_AGENT_ID")
-        or os.getenv("AZURE_AI_FEATURE_AGENT_ID")
-        or os.getenv("FOUNDRY_AGENT_ID")
-        or os.getenv("AZURE_AI_AGENT_ID")
-        or os.getenv("FOUNDRY_FEATURE_AGENT_NAME")
-        or os.getenv("AZURE_AI_FEATURE_AGENT_NAME")
-        or os.getenv("FOUNDRY_AGENT_NAME")
-        or os.getenv("AZURE_AI_AGENT_NAME")
-    )
+    endpoint, agent_ref = resolve_foundry_agent("feature")
 
     if not endpoint or not agent_ref:
         return _local_feature_discovery_response(
